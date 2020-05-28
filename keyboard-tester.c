@@ -618,7 +618,8 @@ int display_keys( struct globals *g ) {
 				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
 				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
 			   e = SDL_RenderFillRect( g->renderer, &r );
-				surface = TTF_RenderText_Solid(g->font, g->keys[i].name, color);
+				//surface = TTF_RenderText_Solid(g->font, g->keys[i].name, color);
+				surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
 				if (surface == NULL) {
 					fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
 					exit(1);
