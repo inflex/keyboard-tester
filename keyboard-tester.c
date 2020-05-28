@@ -1,7 +1,8 @@
-// compile with: gcc foo.cpp -o foo -lSDL2
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
+
+#define KEYMAP_SIZE 285 // how many actual keyboard scancodes there are that SDL2 recognises
 
 #define KEY_WIDTH 70
 #define KEY_HEIGHT 20
@@ -14,6 +15,9 @@
 
 #define FL __FILE__,__LINE__
 
+#define EMPTY_STR ""
+#define FONT_NAME "font.ttf"
+
 
 struct key {
 	char *name;
@@ -24,7 +28,7 @@ struct key {
 
 
 struct globals {
-	struct key keys[300];
+	struct key keys[KEYMAP_SIZE];
 
 	SDL_Window *window;
    SDL_Renderer *renderer;
@@ -33,8 +37,7 @@ struct globals {
 };
 
 
-#define EMPTY_STR ""
-#define FONT_NAME "font.ttf"
+
 int init( struct globals *g ) {
 
 	int i;
@@ -54,7 +57,7 @@ int init( struct globals *g ) {
 	// all flagged as untouched
 	//
 	//
-	for (i = 0; i < 300; i++) {
+	for (i = 0; i < KEYMAP_SIZE; i++) {
 		g->keys[i].pressed = 0;
 		g->keys[i].name = EMPTY_STR;
 		g->keys[i].group = 0;
@@ -568,7 +571,7 @@ int print_keyboard( struct globals *g ) {
 	int i;
 
 	fprintf(stdout,"\n-----------------------------\n");
-	for (i = 0; i < 285; i++) {
+	for (i = 0; i < KEYMAP_SIZE; i++) {
 		if ( g->keys[i].pressed == 0  && g->keys[i].group == 0) {
 			if (*g->keys[0].name != '\0') fprintf(stdout, "%s ", g->keys[i].name);
 		}
@@ -581,7 +584,7 @@ int dump_remaining( struct globals *g ) {
 
 	int i;
 
-	for (i = 0; i < 285; i++) {
+	for (i = 0; i < KEYMAP_SIZE; i++) {
 		if ( g->keys[i].pressed == 0 ) {
 			if (*g->keys[i].name != '\0') {
 				fprintf(stdout, "g->keys[%d].group = 1;\n", i);
@@ -603,7 +606,7 @@ int display_keys( struct globals *g ) {
     SDL_SetRenderDrawColor( g->renderer, 0, 0, 255, 255 );
 
 
-	for (i = 0; i < 285; i++) {
+	for (i = 0; i < KEYMAP_SIZE; i++) {
 		if ( g->keys[i].pressed == 0 ) {
 			if (g->keys[i].group == 0) {
 				int texW = 0;
