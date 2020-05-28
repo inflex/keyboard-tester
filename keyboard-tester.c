@@ -707,7 +707,7 @@ int main(int argc, char **args) {
 				display_keys(g);
 				if ( ms &  KMOD_ALT ) {
 					if (e.key.keysym.scancode == SDL_SCANCODE_Q) {
-						dump_remaining(g);
+//						dump_remaining(g);
 						quit = 1;
 						break;
 					}
