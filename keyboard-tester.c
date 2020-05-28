@@ -1,9 +1,17 @@
 // compile with: gcc foo.cpp -o foo -lSDL2
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define KEY_WIDTH 70
+#define KEY_HEIGHT 20
+#define KEY_SPACING 3
+#define KEYS_ACROSS 16
+#define KEYS_DOWN 20
+#define KEY_PADDING 2
+#define SCREEN_WIDTH (KEY_WIDTH +KEY_SPACING) *KEYS_ACROSS +KEY_SPACING
+#define SCREEN_HEIGHT (KEY_HEIGHT +KEY_SPACING) *KEYS_DOWN +KEY_SPACING
+
 #define FL __FILE__,__LINE__
 
 
@@ -17,13 +25,30 @@ struct key {
 
 struct globals {
 	struct key keys[300];
+
+	SDL_Window *window;
+   SDL_Renderer *renderer;
+	SDL_Surface *screenSurface;
+	TTF_Font *font;
 };
 
 
 #define EMPTY_STR ""
+#define FONT_NAME "font.ttf"
 int init( struct globals *g ) {
 
 	int i;
+
+	g->window = NULL;
+	g->renderer = NULL;
+	g->screenSurface = NULL;
+
+   TTF_Init();
+   g->font = TTF_OpenFont(FONT_NAME, 10 );
+    if (g->font == NULL) {
+        fprintf(stderr, "error: font not found\n");
+        exit(EXIT_FAILURE);
+    }
 
 	// Initialise the scancode array with
 	// all flagged as untouched
@@ -558,7 +583,7 @@ int dump_remaining( struct globals *g ) {
 
 	for (i = 0; i < 285; i++) {
 		if ( g->keys[i].pressed == 0 ) {
-			if (*g->keys[0].name != '\0') {
+			if (*g->keys[i].name != '\0') {
 				fprintf(stdout, "g->keys[%d].group = 1;\n", i);
 			}
 		}
@@ -568,9 +593,52 @@ int dump_remaining( struct globals *g ) {
 	return 0;
 }
 
+int display_keys( struct globals *g ) {
+	int i;
+	int e;
+   SDL_Rect r;
+    r.w = KEY_WIDTH;
+    r.h = KEY_HEIGHT;
+
+    SDL_SetRenderDrawColor( g->renderer, 0, 0, 255, 255 );
+
+
+	for (i = 0; i < 285; i++) {
+		if ( g->keys[i].pressed == 0 ) {
+			if (g->keys[i].group == 0) {
+				int texW = 0;
+				int texH = 0;
+				SDL_Color color = { 255, 255, 255 };
+				SDL_Surface *surface = NULL;
+				SDL_Texture *texture = NULL;
+
+				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
+				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+			   e = SDL_RenderFillRect( g->renderer, &r );
+				surface = TTF_RenderText_Solid(g->font, g->keys[i].name, color);
+				if (surface == NULL) {
+					fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
+					exit(1);
+				}
+				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
+				SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+				SDL_DestroyTexture(texture);
+				SDL_FreeSurface(surface);
+				if (e < 0) {
+					fprintf(stderr,"Error drawing rectangle (%s)\n", SDL_GetError());
+				}
+			}
+		}
+	}
+
+    SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+
+	return 0;
+}
+
 int main(int argc, char **args) {
-	SDL_Window *window = NULL;
-	SDL_Surface *screenSurface = NULL;
 	struct globals glb, *g;
 	int quit = 0;
 	SDL_Event e;
@@ -585,20 +653,33 @@ int main(int argc, char **args) {
 		return 1;
 	}
 
-	window = SDL_CreateWindow(
+	g->window = SDL_CreateWindow(
 			"Keyboard Tester",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			SCREEN_WIDTH, SCREEN_HEIGHT,
 			SDL_WINDOW_SHOWN
 			);
-	if (window == NULL) {
+	if (g->window == NULL) {
 		fprintf(stderr, "could not create window: %s\n", SDL_GetError());
 		return 1;
 	}
 
-	screenSurface = SDL_GetWindowSurface(window);
+//	g->screenSurface = SDL_GetWindowSurface(g->window);
 
+   // Setup renderer
+   g->renderer =  SDL_CreateRenderer( g->window, -1, SDL_RENDERER_SOFTWARE);
+	if (g->renderer == NULL) {
+		fprintf(stderr,"Error creating renderer (%s)\n", SDL_GetError());
+		exit(1);
+	}
 
+    // Set render color to red ( background will be rendered in this color )
+    SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+
+    // Clear winow
+    SDL_RenderClear( g->renderer );
+
+	display_keys(g);
 
 	//While application is running
 	while( !quit ) {
@@ -617,22 +698,24 @@ int main(int argc, char **args) {
 
 			if ( e.type == SDL_KEYDOWN ) {
 				g->keys[e.key.keysym.scancode].pressed = 1;
-				print_keyboard(g);
-				if ( ms &  KMOD_CTRL ) {
+//				print_keyboard(g);
+				SDL_RenderClear( g->renderer );
+				display_keys(g);
+				if ( ms &  KMOD_ALT ) {
 					if (e.key.keysym.scancode == SDL_SCANCODE_Q) {
 						dump_remaining(g);
+						quit = 1;
 						break;
 					}
 				}
-				//				fprintf(stderr,"%s:%d: scancode %03d '%s' pressed\n", FL, e.key.keysym.scancode, g->keyname[e.key.keysym.scancode] );
 			}
 
 		}
+		SDL_RenderPresent( g->renderer );
 
-		SDL_UpdateWindowSurface(window);
 	}
 
-	SDL_DestroyWindow(window);
+	SDL_DestroyWindow(g->window);
 	SDL_Quit();
 
 	return 0;
