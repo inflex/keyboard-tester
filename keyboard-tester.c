@@ -25,6 +25,7 @@ struct key {
 	int group;
 	int x, y;
 	uint32_t down, up, delta;
+	uint32_t flagged;
 };
 
 
@@ -35,6 +36,11 @@ struct globals {
    SDL_Renderer *renderer;
 	SDL_Surface *screenSurface;
 	TTF_Font *font;
+
+	// Thresholds for testing
+	//
+	int dwell_lower;
+	int dwell_upper; 
 };
 
 
@@ -64,7 +70,11 @@ int init( struct globals *g ) {
 		g->keys[i].group = 0;
 		g->keys[i].x = 0;
 		g->keys[i].y = 0;
+		g->keys[i].flagged = 0;
 	}
+
+	g->dwell_lower = 20; // anything shorter and probably not making full contact
+	g->dwell_upper = 150; // anything longer and key is slow to return
 
 
 	g->keys[0].name = "UNKNOWN";
@@ -648,7 +658,8 @@ int display_keys( struct globals *g ) {
 				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
 				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
 
-				snprintf(dwell, sizeof(dwell), "[%ld]%s", g->keys[i].delta, g->keys[i].name );
+				if (g->keys[i].flagged == 1) color.r = 255;
+				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
 				surface = TTF_RenderText_Blended(g->font, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
@@ -742,6 +753,7 @@ int main(int argc, char **args) {
 				g->keys[sc].pressed = 2;
 				g->keys[sc].up = e.key.timestamp;
 				g->keys[sc].delta = g->keys[sc].up -g->keys[sc].down;
+				if ((g->keys[sc].delta > g->dwell_upper)||(g->keys[sc].delta < g->dwell_lower)) g->keys[sc].flagged |= 1;
 				SDL_RenderClear( g->renderer );
 				display_keys(g);
 			}
