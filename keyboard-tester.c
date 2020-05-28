@@ -24,6 +24,7 @@ struct key {
 	int pressed;
 	int group;
 	int x, y;
+	uint32_t down, up, delta;
 };
 
 
@@ -598,16 +599,16 @@ int dump_remaining( struct globals *g ) {
 
 int display_keys( struct globals *g ) {
 	int i;
-	int e;
    SDL_Rect r;
     r.w = KEY_WIDTH;
     r.h = KEY_HEIGHT;
 
-    SDL_SetRenderDrawColor( g->renderer, 0, 0, 255, 255 );
 
 
 	for (i = 0; i < KEYMAP_SIZE; i++) {
-		if ( g->keys[i].pressed == 0 ) {
+		if ( g->keys[i].pressed < 2 ) {
+			if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
+			else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
 			if (g->keys[i].group == 0) {
 				int texW = 0;
 				int texH = 0;
@@ -617,8 +618,7 @@ int display_keys( struct globals *g ) {
 
 				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
 				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
-			   e = SDL_RenderFillRect( g->renderer, &r );
-				//surface = TTF_RenderText_Solid(g->font, g->keys[i].name, color);
+			   SDL_RenderFillRect( g->renderer, &r );
 				surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
 				if (surface == NULL) {
 					fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
@@ -630,11 +630,35 @@ int display_keys( struct globals *g ) {
 				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
 				SDL_DestroyTexture(texture);
 				SDL_FreeSurface(surface);
-				if (e < 0) {
-					fprintf(stderr,"Error drawing rectangle (%s)\n", SDL_GetError());
-				}
+			} // if group 0
+
+		} // if pressed < 2
+
+		else {
+
+			// leave behind stats of the key press
+			//
+				int texW = 0;
+				int texH = 0;
+				SDL_Color color = { 0, 0, 0 };
+				SDL_Surface *surface = NULL;
+				SDL_Texture *texture = NULL;
+				char dwell[20];
+
+				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
+				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+
+				snprintf(dwell, sizeof(dwell), "[%ld]%s", g->keys[i].delta, g->keys[i].name );
+
+				surface = TTF_RenderText_Blended(g->font, dwell, color);
+				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
+				SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+				SDL_DestroyTexture(texture);
+				SDL_FreeSurface(surface);
 			}
-		}
+
 	}
 
     SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
@@ -689,6 +713,7 @@ int main(int argc, char **args) {
 	while( !quit ) {
 
 		SDL_Keymod ms;
+		int sc;
 
 		//Handle events on queue
 		while( SDL_PollEvent( &e ) != 0 ) {
@@ -699,19 +724,26 @@ int main(int argc, char **args) {
 
 
 			ms = SDL_GetModState();
+			sc = e.key.keysym.scancode;
 
 			if ( e.type == SDL_KEYDOWN ) {
-				g->keys[e.key.keysym.scancode].pressed = 1;
-//				print_keyboard(g);
+				g->keys[sc].pressed = 1;
+				g->keys[sc].down = e.key.timestamp;
 				SDL_RenderClear( g->renderer );
 				display_keys(g);
 				if ( ms &  KMOD_ALT ) {
-					if (e.key.keysym.scancode == SDL_SCANCODE_Q) {
+					if (sc == SDL_SCANCODE_Q) {
 //						dump_remaining(g);
 						quit = 1;
 						break;
 					}
 				}
+			} else if ( e.type == SDL_KEYUP ) {
+				g->keys[sc].pressed = 2;
+				g->keys[sc].up = e.key.timestamp;
+				g->keys[sc].delta = g->keys[sc].up -g->keys[sc].down;
+				SDL_RenderClear( g->renderer );
+				display_keys(g);
 			}
 
 		}
