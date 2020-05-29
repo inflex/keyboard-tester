@@ -38,6 +38,8 @@ struct globals {
 	struct key keys[KEYMAP_SIZE];
 	int max_index;
 	char *map_filename;
+	int quit_on_complete;
+	int any_unpressed;
 
 	SDL_Window *window;
 	SDL_Renderer *renderer;
@@ -561,6 +563,7 @@ int init( struct globals *g ) {
 	g->window = NULL;
 	g->renderer = NULL;
 	g->map_filename = NULL;
+	g->quit_on_complete = 0;
 
 	TTF_Init();
 	g->font = TTF_OpenFont(FONT_NAME, 10 );
@@ -593,7 +596,12 @@ int init( struct globals *g ) {
 
 int show_help( void ) {
 
-	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>]\n"
+	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c]\n"
+			"\n"
+			"--dl <time (20 ms default)> : Set acceptable lower limit of key down time\n"
+			"--dh <time (200 ms default)> : Set acceptable upper limit of key down time\n"
+			"-m <mapfile> : Set keyboard map to use, limits keys and sets names to test\n"
+			"-c : Close tester when all keys have been pressed\n"
 			"\n"
 			"\tALT-Q: exit/quit\n"
 			"\tALT-M: Save current pressed keyset to mapfile\n"
@@ -618,6 +626,10 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 			show_help();
 			exit(0);
 		} 
+
+		else if (strcmp( p, "-c")==0) {
+			g->quit_on_complete = 1;
+		}
 
 		else if (strcmp( p, "-m")==0) {
 			i++;
@@ -728,11 +740,14 @@ int display_keys( struct globals *g ) {
 	r.w = KEY_WIDTH;
 	r.h = KEY_HEIGHT;
 
+	g->any_unpressed = 0;
+
 
 
 	for (i = 0; i <= g->max_index; i++) {
 		if (g->keys[i].name != NULL) {
 		if ( g->keys[i].pressed < 2 ) {
+			g->any_unpressed = 1;
 			if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
 			else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
 			if (g->keys[i].group == 0) {
@@ -882,10 +897,12 @@ int main(int argc, char **argv) {
 				if ((g->keys[sc].delta > g->dwell_upper)||(g->keys[sc].delta < g->dwell_lower)) g->keys[sc].flagged |= 1;
 				SDL_RenderClear( g->renderer );
 				display_keys(g);
+				if (g->any_unpressed == 0 && g->quit_on_complete == 1) quit = 1;
 			}
 
 		}
 		SDL_RenderPresent( g->renderer );
+
 
 	}
 

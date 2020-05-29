@@ -24,11 +24,22 @@ brew install libsdl2 libsd2_ttf
 ```make```
 
 ### Parameters
-... yet to work on this
+```
+keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c]
+
+--dl <time (20 ms default)> : Set acceptable lower limit of key down time
+--dh <time (200 ms default)> : Set acceptable upper limit of key down time
+-m <mapfile> : Set keyboard map to use, limits keys and sets names to test
+-c : Close tester when all keys have been pressed
+
+        ALT-Q: exit/quit
+        ALT-M: Save current pressed keyset to mapfile
+```
 
 ### Application Controls
 ```
 	alt-q / opt-q : quit
+	alt-m / opt-m : Save currently pressed keys array to map file
 ```
 
 ### Screenshots
