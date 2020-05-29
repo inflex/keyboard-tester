@@ -1,6 +1,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+
+#define PATH_MAX 4096
 
 #define KEYMAP_SIZE 285 // how many actual keyboard scancodes there are that SDL2 recognises
 
@@ -15,7 +21,6 @@
 
 #define FL __FILE__,__LINE__
 
-#define EMPTY_STR ""
 #define FONT_NAME "font.ttf"
 
 
@@ -31,10 +36,11 @@ struct key {
 
 struct globals {
 	struct key keys[KEYMAP_SIZE];
+	int max_index;
+	char *map_filename;
 
 	SDL_Window *window;
-   SDL_Renderer *renderer;
-	SDL_Surface *screenSurface;
+	SDL_Renderer *renderer;
 	TTF_Font *font;
 
 	// Thresholds for testing
@@ -44,38 +50,7 @@ struct globals {
 };
 
 
-
-int init( struct globals *g ) {
-
-	int i;
-
-	g->window = NULL;
-	g->renderer = NULL;
-	g->screenSurface = NULL;
-
-   TTF_Init();
-   g->font = TTF_OpenFont(FONT_NAME, 10 );
-    if (g->font == NULL) {
-        fprintf(stderr, "error: font not found\n");
-        exit(EXIT_FAILURE);
-    }
-
-	// Initialise the scancode array with
-	// all flagged as untouched
-	//
-	//
-	for (i = 0; i < KEYMAP_SIZE; i++) {
-		g->keys[i].pressed = 0;
-		g->keys[i].name = EMPTY_STR;
-		g->keys[i].group = 0;
-		g->keys[i].x = 0;
-		g->keys[i].y = 0;
-		g->keys[i].flagged = 0;
-	}
-
-	g->dwell_lower = 20; // anything shorter and probably not making full contact
-	g->dwell_upper = 150; // anything longer and key is slow to return
-
+int map_default( struct globals *g ) {
 
 	g->keys[0].name = "UNKNOWN";
 	g->keys[4].name = "A";
@@ -378,211 +353,303 @@ int init( struct globals *g ) {
 	g->keys[284].name = "APP2";
 
 	g->keys[0].group = 1;
-g->keys[1].group = 1;
-g->keys[2].group = 1;
-g->keys[3].group = 1;
-g->keys[50].group = 1;
-g->keys[100].group = 1;
-g->keys[101].group = 1;
-g->keys[102].group = 1;
-g->keys[103].group = 1;
-g->keys[104].group = 1;
-g->keys[105].group = 1;
-g->keys[106].group = 1;
-g->keys[107].group = 1;
-g->keys[108].group = 1;
-g->keys[109].group = 1;
-g->keys[110].group = 1;
-g->keys[111].group = 1;
-g->keys[112].group = 1;
-g->keys[113].group = 1;
-g->keys[114].group = 1;
-g->keys[115].group = 1;
-g->keys[116].group = 1;
-g->keys[117].group = 1;
-g->keys[118].group = 1;
-g->keys[119].group = 1;
-g->keys[120].group = 1;
+	g->keys[1].group = 1;
+	g->keys[2].group = 1;
+	g->keys[3].group = 1;
+	g->keys[50].group = 1;
+	g->keys[100].group = 1;
+	g->keys[101].group = 1;
+	g->keys[102].group = 1;
+	g->keys[103].group = 1;
+	g->keys[104].group = 1;
+	g->keys[105].group = 1;
+	g->keys[106].group = 1;
+	g->keys[107].group = 1;
+	g->keys[108].group = 1;
+	g->keys[109].group = 1;
+	g->keys[110].group = 1;
+	g->keys[111].group = 1;
+	g->keys[112].group = 1;
+	g->keys[113].group = 1;
+	g->keys[114].group = 1;
+	g->keys[115].group = 1;
+	g->keys[116].group = 1;
+	g->keys[117].group = 1;
+	g->keys[118].group = 1;
+	g->keys[119].group = 1;
+	g->keys[120].group = 1;
 
-g->keys[121].group = 1;
-g->keys[122].group = 1;
-g->keys[123].group = 1;
-g->keys[124].group = 1;
-g->keys[125].group = 1;
-g->keys[126].group = 1;
-g->keys[130].group = 1;
+	g->keys[121].group = 1;
+	g->keys[122].group = 1;
+	g->keys[123].group = 1;
+	g->keys[124].group = 1;
+	g->keys[125].group = 1;
+	g->keys[126].group = 1;
+	g->keys[130].group = 1;
 
-g->keys[131].group = 1;
-g->keys[132].group = 1;
-g->keys[133].group = 1;
-g->keys[134].group = 1;
-g->keys[135].group = 1;
-g->keys[136].group = 1;
-g->keys[137].group = 1;
-g->keys[138].group = 1;
-g->keys[139].group = 1;
-g->keys[140].group = 1;
+	g->keys[131].group = 1;
+	g->keys[132].group = 1;
+	g->keys[133].group = 1;
+	g->keys[134].group = 1;
+	g->keys[135].group = 1;
+	g->keys[136].group = 1;
+	g->keys[137].group = 1;
+	g->keys[138].group = 1;
+	g->keys[139].group = 1;
+	g->keys[140].group = 1;
 
-g->keys[141].group = 1;
-g->keys[142].group = 1;
-g->keys[143].group = 1;
-g->keys[144].group = 1;
-g->keys[145].group = 1;
-g->keys[146].group = 1;
-g->keys[147].group = 1;
-g->keys[148].group = 1;
-g->keys[149].group = 1;
-g->keys[150].group = 1;
+	g->keys[141].group = 1;
+	g->keys[142].group = 1;
+	g->keys[143].group = 1;
+	g->keys[144].group = 1;
+	g->keys[145].group = 1;
+	g->keys[146].group = 1;
+	g->keys[147].group = 1;
+	g->keys[148].group = 1;
+	g->keys[149].group = 1;
+	g->keys[150].group = 1;
 
-g->keys[151].group = 1;
-g->keys[152].group = 1;
-g->keys[153].group = 1;
-g->keys[154].group = 1;
-g->keys[155].group = 1;
-g->keys[156].group = 1;
-g->keys[157].group = 1;
-g->keys[158].group = 1;
-g->keys[159].group = 1;
-g->keys[160].group = 1;
+	g->keys[151].group = 1;
+	g->keys[152].group = 1;
+	g->keys[153].group = 1;
+	g->keys[154].group = 1;
+	g->keys[155].group = 1;
+	g->keys[156].group = 1;
+	g->keys[157].group = 1;
+	g->keys[158].group = 1;
+	g->keys[159].group = 1;
+	g->keys[160].group = 1;
 
-g->keys[161].group = 1;
-g->keys[162].group = 1;
-g->keys[163].group = 1;
-g->keys[164].group = 1;
-g->keys[165].group = 1;
-g->keys[166].group = 1;
-g->keys[167].group = 1;
-g->keys[168].group = 1;
-g->keys[169].group = 1;
-g->keys[170].group = 1;
+	g->keys[161].group = 1;
+	g->keys[162].group = 1;
+	g->keys[163].group = 1;
+	g->keys[164].group = 1;
+	g->keys[165].group = 1;
+	g->keys[166].group = 1;
+	g->keys[167].group = 1;
+	g->keys[168].group = 1;
+	g->keys[169].group = 1;
+	g->keys[170].group = 1;
 
-g->keys[171].group = 1;
-g->keys[172].group = 1;
-g->keys[173].group = 1;
-g->keys[174].group = 1;
-g->keys[175].group = 1;
-g->keys[176].group = 1;
-g->keys[177].group = 1;
-g->keys[178].group = 1;
-g->keys[179].group = 1;
-g->keys[180].group = 1;
+	g->keys[171].group = 1;
+	g->keys[172].group = 1;
+	g->keys[173].group = 1;
+	g->keys[174].group = 1;
+	g->keys[175].group = 1;
+	g->keys[176].group = 1;
+	g->keys[177].group = 1;
+	g->keys[178].group = 1;
+	g->keys[179].group = 1;
+	g->keys[180].group = 1;
 
-g->keys[181].group = 1;
-g->keys[182].group = 1;
-g->keys[183].group = 1;
-g->keys[184].group = 1;
-g->keys[185].group = 1;
-g->keys[186].group = 1;
-g->keys[187].group = 1;
-g->keys[188].group = 1;
-g->keys[189].group = 1;
-g->keys[190].group = 1;
+	g->keys[181].group = 1;
+	g->keys[182].group = 1;
+	g->keys[183].group = 1;
+	g->keys[184].group = 1;
+	g->keys[185].group = 1;
+	g->keys[186].group = 1;
+	g->keys[187].group = 1;
+	g->keys[188].group = 1;
+	g->keys[189].group = 1;
+	g->keys[190].group = 1;
 
-g->keys[191].group = 1;
-g->keys[192].group = 1;
-g->keys[193].group = 1;
-g->keys[194].group = 1;
-g->keys[195].group = 1;
-g->keys[196].group = 1;
-g->keys[197].group = 1;
-g->keys[198].group = 1;
-g->keys[199].group = 1;
-g->keys[200].group = 1;
+	g->keys[191].group = 1;
+	g->keys[192].group = 1;
+	g->keys[193].group = 1;
+	g->keys[194].group = 1;
+	g->keys[195].group = 1;
+	g->keys[196].group = 1;
+	g->keys[197].group = 1;
+	g->keys[198].group = 1;
+	g->keys[199].group = 1;
+	g->keys[200].group = 1;
 
-g->keys[201].group = 1;
-g->keys[202].group = 1;
-g->keys[203].group = 1;
-g->keys[204].group = 1;
-g->keys[205].group = 1;
-g->keys[206].group = 1;
-g->keys[207].group = 1;
-g->keys[208].group = 1;
-g->keys[209].group = 1;
-g->keys[210].group = 1;
+	g->keys[201].group = 1;
+	g->keys[202].group = 1;
+	g->keys[203].group = 1;
+	g->keys[204].group = 1;
+	g->keys[205].group = 1;
+	g->keys[206].group = 1;
+	g->keys[207].group = 1;
+	g->keys[208].group = 1;
+	g->keys[209].group = 1;
+	g->keys[210].group = 1;
 
-g->keys[211].group = 1;
-g->keys[212].group = 1;
-g->keys[213].group = 1;
-g->keys[214].group = 1;
-g->keys[215].group = 1;
-g->keys[216].group = 1;
-g->keys[217].group = 1;
-g->keys[218].group = 1;
-g->keys[219].group = 1;
-g->keys[220].group = 1;
+	g->keys[211].group = 1;
+	g->keys[212].group = 1;
+	g->keys[213].group = 1;
+	g->keys[214].group = 1;
+	g->keys[215].group = 1;
+	g->keys[216].group = 1;
+	g->keys[217].group = 1;
+	g->keys[218].group = 1;
+	g->keys[219].group = 1;
+	g->keys[220].group = 1;
 
-g->keys[221].group = 1;
-g->keys[222].group = 1;
-g->keys[223].group = 1;
-g->keys[228].group = 1;
+	g->keys[221].group = 1;
+	g->keys[222].group = 1;
+	g->keys[223].group = 1;
+	g->keys[228].group = 1;
 
-g->keys[232].group = 1;
-g->keys[233].group = 1;
-g->keys[234].group = 1;
-g->keys[235].group = 1;
-g->keys[236].group = 1;
-g->keys[237].group = 1;
-g->keys[238].group = 1;
-g->keys[239].group = 1;
-g->keys[240].group = 1;
+	g->keys[232].group = 1;
+	g->keys[233].group = 1;
+	g->keys[234].group = 1;
+	g->keys[235].group = 1;
+	g->keys[236].group = 1;
+	g->keys[237].group = 1;
+	g->keys[238].group = 1;
+	g->keys[239].group = 1;
+	g->keys[240].group = 1;
 
-g->keys[241].group = 1;
-g->keys[242].group = 1;
-g->keys[243].group = 1;
-g->keys[244].group = 1;
-g->keys[245].group = 1;
-g->keys[246].group = 1;
-g->keys[247].group = 1;
-g->keys[248].group = 1;
-g->keys[249].group = 1;
-g->keys[250].group = 1;
+	g->keys[241].group = 1;
+	g->keys[242].group = 1;
+	g->keys[243].group = 1;
+	g->keys[244].group = 1;
+	g->keys[245].group = 1;
+	g->keys[246].group = 1;
+	g->keys[247].group = 1;
+	g->keys[248].group = 1;
+	g->keys[249].group = 1;
+	g->keys[250].group = 1;
 
-g->keys[251].group = 1;
-g->keys[252].group = 1;
-g->keys[253].group = 1;
-g->keys[254].group = 1;
-g->keys[255].group = 1;
-g->keys[256].group = 1;
-g->keys[257].group = 1;
-g->keys[258].group = 1;
-g->keys[259].group = 1;
-g->keys[260].group = 1;
+	g->keys[251].group = 1;
+	g->keys[252].group = 1;
+	g->keys[253].group = 1;
+	g->keys[254].group = 1;
+	g->keys[255].group = 1;
+	g->keys[256].group = 1;
+	g->keys[257].group = 1;
+	g->keys[258].group = 1;
+	g->keys[259].group = 1;
+	g->keys[260].group = 1;
 
-g->keys[261].group = 1;
-g->keys[262].group = 1;
-g->keys[263].group = 1;
-g->keys[264].group = 1;
-g->keys[265].group = 1;
-g->keys[267].group = 1;
-g->keys[268].group = 1;
-g->keys[269].group = 1;
-g->keys[270].group = 1;
+	g->keys[261].group = 1;
+	g->keys[262].group = 1;
+	g->keys[263].group = 1;
+	g->keys[264].group = 1;
+	g->keys[265].group = 1;
+	g->keys[267].group = 1;
+	g->keys[268].group = 1;
+	g->keys[269].group = 1;
+	g->keys[270].group = 1;
 
-g->keys[271].group = 1;
-g->keys[272].group = 1;
-g->keys[273].group = 1;
-g->keys[274].group = 1;
-g->keys[275].group = 1;
-g->keys[276].group = 1;
-g->keys[277].group = 1;
-g->keys[278].group = 1;
-g->keys[279].group = 1;
-g->keys[280].group = 1;
+	g->keys[271].group = 1;
+	g->keys[272].group = 1;
+	g->keys[273].group = 1;
+	g->keys[274].group = 1;
+	g->keys[275].group = 1;
+	g->keys[276].group = 1;
+	g->keys[277].group = 1;
+	g->keys[278].group = 1;
+	g->keys[279].group = 1;
+	g->keys[280].group = 1;
 
-g->keys[281].group = 1;
-g->keys[282].group = 1;
-g->keys[283].group = 1;
-g->keys[284].group = 1;
+	g->keys[281].group = 1;
+	g->keys[282].group = 1;
+	g->keys[283].group = 1;
+	g->keys[284].group = 1;
+
+	g->max_index = 284;
 
 	return 0;
 }
+
+int init( struct globals *g ) {
+
+	int i;
+
+	g->window = NULL;
+	g->renderer = NULL;
+	g->map_filename = NULL;
+
+	TTF_Init();
+	g->font = TTF_OpenFont(FONT_NAME, 10 );
+	if (g->font == NULL) {
+		fprintf(stderr, "error: font not found\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Initialise the scancode array with
+	// all flagged as untouched
+	//
+	//
+	for (i = 0; i < KEYMAP_SIZE; i++) {
+		g->keys[i].pressed = 0;
+		g->keys[i].name = NULL;
+		g->keys[i].group = 0;
+		g->keys[i].x = 0;
+		g->keys[i].y = 0;
+		g->keys[i].flagged = 0;
+	}
+
+	g->dwell_lower = 20; // anything shorter and probably not making full contact
+	g->dwell_upper = 200; // anything longer and key is slow to return
+
+
+
+	return 0;
+}
+
+
+int show_help( void ) {
+
+	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>]\n"
+			"\n"
+			"\tALT-Q: exit/quit\n"
+			"\tALT-M: Save current pressed keyset to mapfile\n"
+			"\n"
+			);
+
+
+
+	return 0;
+}
+
+int parse_parameters( struct globals *g, int argc, char **argv ) {
+
+	int i;
+	char *p;
+
+	for (i = 1; i < argc; i++ ) {
+
+		p = argv[i];
+
+		if (strcmp( p, "-h" )==0) {
+			show_help();
+			exit(0);
+		} 
+
+		else if (strcmp( p, "-m")==0) {
+			i++;
+			g->map_filename = argv[i];
+		}
+
+		else if (strcmp( p, "--dl" )==0) {
+			i++;
+			g->dwell_lower = strtol( argv[i], NULL, 10 );
+		}
+
+		else if (strcmp( p, "--dh" )==0) {
+			i++;
+			g->dwell_upper = strtol( argv[i], NULL, 10 );
+
+		}
+
+		else {
+			fprintf(stderr,"Unknown parmeter '%s'\n", argv[i]);
+		}
+
+	} // for
+
+	return 0;
+} // parse paramters
 
 int print_keyboard( struct globals *g ) {
 
 	int i;
 
 	fprintf(stdout,"\n-----------------------------\n");
-	for (i = 0; i < KEYMAP_SIZE; i++) {
+	for (i = 0; i <= g->max_index; i++) {
 		if ( g->keys[i].pressed == 0  && g->keys[i].group == 0) {
 			if (*g->keys[0].name != '\0') fprintf(stdout, "%s ", g->keys[i].name);
 		}
@@ -607,15 +674,64 @@ int dump_remaining( struct globals *g ) {
 	return 0;
 }
 
+int load_map( struct globals *g, char *fn ) {
+	FILE *f;
+	char s[1024];
+	int idx, group;
+	char name[21];
+
+	f = fopen(fn, "r");
+	if (f) {
+		char *r;
+
+		g->max_index = 0;
+		while ((r = fgets(s, sizeof(s), f )) != NULL) {
+			sscanf(s, "scancode:%d group:%d name:%20s\n", &idx, &group, name );
+			g->keys[idx].group = group;
+			g->keys[idx].name = strdup(name);
+			if (idx > g->max_index) g->max_index = idx;
+		}
+
+		fclose(f);
+	}
+	return 0;
+}
+
+int save_map( struct globals *g ) {
+
+	int i;
+	FILE *f;
+	char fn[PATH_MAX];
+
+	snprintf(fn, sizeof(fn), "%ld.kmap", time(NULL));
+	f = fopen(fn, "w");
+	if (f) {
+
+		fprintf(stdout,"Writing all currently pressed keys to '%s' ...", fn );
+
+		for (i = 0; i <= g->max_index; i++) {
+			if (g->keys[i].pressed == 2) {
+				fprintf(stdout, "scancode:%d group:%d name:%s\n", i, g->keys[i].group, g->keys[i].name);
+				fprintf(f, "scancode:%d group:%d name:%s\n", i, g->keys[i].group, g->keys[i].name);
+			}
+		}
+		fclose(f);
+		fprintf(stdout,"done.\n");
+	}
+
+	return 0;
+}
+
 int display_keys( struct globals *g ) {
 	int i;
-   SDL_Rect r;
-    r.w = KEY_WIDTH;
-    r.h = KEY_HEIGHT;
+	SDL_Rect r;
+	r.w = KEY_WIDTH;
+	r.h = KEY_HEIGHT;
 
 
 
-	for (i = 0; i < KEYMAP_SIZE; i++) {
+	for (i = 0; i <= g->max_index; i++) {
+		if (g->keys[i].name != NULL) {
 		if ( g->keys[i].pressed < 2 ) {
 			if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
 			else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
@@ -628,7 +744,7 @@ int display_keys( struct globals *g ) {
 
 				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
 				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
-			   SDL_RenderFillRect( g->renderer, &r );
+				SDL_RenderFillRect( g->renderer, &r );
 				surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
 				if (surface == NULL) {
 					fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
@@ -648,36 +764,37 @@ int display_keys( struct globals *g ) {
 
 			// leave behind stats of the key press
 			//
-				int texW = 0;
-				int texH = 0;
-				SDL_Color color = { 0, 0, 0 };
-				SDL_Surface *surface = NULL;
-				SDL_Texture *texture = NULL;
-				char dwell[20];
+			int texW = 0;
+			int texH = 0;
+			SDL_Color color = { 0, 0, 0 };
+			SDL_Surface *surface = NULL;
+			SDL_Texture *texture = NULL;
+			char dwell[20];
 
-				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
-				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+			r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
+			r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
 
-				if (g->keys[i].flagged == 1) color.r = 255;
-				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
+			if (g->keys[i].flagged == 1) color.r = 255;
+			snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
-				surface = TTF_RenderText_Blended(g->font, dwell, color);
-				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
-				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-				SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
-				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
-				SDL_DestroyTexture(texture);
-				SDL_FreeSurface(surface);
-			}
+			surface = TTF_RenderText_Blended(g->font, dwell, color);
+			texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+			SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
+			SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+			SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+			SDL_DestroyTexture(texture);
+			SDL_FreeSurface(surface);
+		}
 
+		}
 	}
 
-    SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+	SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
 
 	return 0;
 }
 
-int main(int argc, char **args) {
+int main(int argc, char **argv) {
 	struct globals glb, *g;
 	int quit = 0;
 	SDL_Event e;
@@ -685,6 +802,14 @@ int main(int argc, char **args) {
 	g = &glb;
 
 	init(g);
+
+	parse_parameters(g, argc, argv);
+
+	if (g->map_filename != NULL) {
+		load_map(g, g->map_filename);
+	} else {
+		map_default(g);
+	}
 
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -703,20 +828,19 @@ int main(int argc, char **args) {
 		return 1;
 	}
 
-//	g->screenSurface = SDL_GetWindowSurface(g->window);
 
-   // Setup renderer
-   g->renderer =  SDL_CreateRenderer( g->window, -1, SDL_RENDERER_SOFTWARE);
+	// Setup renderer
+	g->renderer =  SDL_CreateRenderer( g->window, -1, SDL_RENDERER_SOFTWARE);
 	if (g->renderer == NULL) {
 		fprintf(stderr,"Error creating renderer (%s)\n", SDL_GetError());
 		exit(1);
 	}
 
-    // Set render color to red ( background will be rendered in this color )
-    SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+	// Set render color to red ( background will be rendered in this color )
+	SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
 
-    // Clear winow
-    SDL_RenderClear( g->renderer );
+	// Clear winow
+	SDL_RenderClear( g->renderer );
 
 	display_keys(g);
 
@@ -744,9 +868,11 @@ int main(int argc, char **args) {
 				display_keys(g);
 				if ( ms &  KMOD_ALT ) {
 					if (sc == SDL_SCANCODE_Q) {
-//						dump_remaining(g);
+						//						dump_remaining(g);
 						quit = 1;
-						break;
+					}
+					if (sc ==  SDL_SCANCODE_M) {
+						save_map(g);
 					}
 				}
 			} else if ( e.type == SDL_KEYUP ) {
