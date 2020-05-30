@@ -888,7 +888,7 @@ int display_keys( struct globals *g ) {
 				
 
 				if (g->keys[i].flagged == 1) color.r = 255;
-				if (g->debug) snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
+				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
 				surface = TTF_RenderText_Blended(g->font, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
@@ -900,7 +900,7 @@ int display_keys( struct globals *g ) {
 					dstrect.w = g->key_width;
 				} else dstrect.w = texW;
 
-				fprintf(stderr,"[%d] =>> '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
+				if (g->debug) fprintf(stderr,"[%d] =>> '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
 
 				SDL_RenderCopy(g->renderer, texture, &srcrect, &dstrect);
 				SDL_DestroyTexture(texture);
