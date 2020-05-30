@@ -62,4 +62,10 @@ keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [
 ```
 
 ### Screenshots
-![Screenshot](assets/images/ss-1.jpg)
+
+#### Default mode
+![Screenshot](assets/images/ss-normal.png)
+
+
+#### Compact mode
+![Screenshot](assets/images/ss-compact.png)
