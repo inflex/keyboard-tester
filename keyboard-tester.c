@@ -647,15 +647,18 @@ int init( struct globals *g ) {
 
 int show_help( void ) {
 
-	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c]\n"
+	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c] [--dpi <dpi>] [--fs <pts>]\n"
 			"\n"
 			"--dl <time (20 ms default)> : Set acceptable lower limit of key down time\n"
 			"--dh <time (200 ms default)> : Set acceptable upper limit of key down time\n"
 			"-m <mapfile> : Set keyboard map to use, limits keys and sets names to test\n"
 			"-c : Close tester when all keys have been pressed\n"
 			"\n"
-			"\tALT-Q: exit/quit\n"
-			"\tALT-M: Save current pressed keyset to mapfile\n"
+			"--dpi <dpi> : Force screen DPI\n"
+			"--fs <pts> : Set font size in pts\n"
+			"\n"
+			"\tALT/OPT-Q: exit/quit\n"
+			"\tALT/OPT-M: Save current pressed keyset to mapfile\n"
 			"\n"
 			);
 

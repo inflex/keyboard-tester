@@ -25,15 +25,18 @@ brew install libsdl2 libsd2_ttf
 
 ### Parameters
 ```
-keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c]
+keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c] [--dpi <dpi>] [--fs <pts>]
 
 --dl <time (20 ms default)> : Set acceptable lower limit of key down time
 --dh <time (200 ms default)> : Set acceptable upper limit of key down time
 -m <mapfile> : Set keyboard map to use, limits keys and sets names to test
 -c : Close tester when all keys have been pressed
 
-        ALT-Q: exit/quit
-        ALT-M: Save current pressed keyset to mapfile
+--dpi <dpi> : Force screen DPI
+--fs <pts> : Set font size in pts
+
+        ALT/OPT-Q: exit/quit
+        ALT/OPT-M: Save current pressed keyset to mapfile
 ```
 
 ### Application Controls
