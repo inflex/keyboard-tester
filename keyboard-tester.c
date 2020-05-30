@@ -5,23 +5,23 @@
 #include <string.h>
 #include <time.h>
 
-#include "font.h"
+#include "font.h" // embedded fonts now, created using xxd -i <font> > font.h
 
-//#define FONT_NAME "font.ttf"
-#define FONT_SIZE 14
 
 #define PATH_MAX 4096
 
 #define KEYMAP_SIZE 285 // how many actual keyboard scancodes there are that SDL2 recognises
 
-#define KEY_WIDTH 70
-#define KEY_HEIGHT FONT_SIZE+10 
-#define KEY_SPACING 3
-#define KEYS_ACROSS 16
-#define KEYS_DOWN 20
-#define KEY_PADDING 2
-#define SCREEN_WIDTH (KEY_WIDTH +KEY_SPACING) *KEYS_ACROSS +KEY_SPACING
-#define SCREEN_HEIGHT (KEY_HEIGHT +KEY_SPACING) *KEYS_DOWN +KEY_SPACING
+#define DEFAULT_DPI 72
+#define DEFAULT_FONT_SIZE 16
+#define DEFAULT_KEY_WIDTH FONT_SIZE_DEFAULT *5
+#define DEFUALT_KEY_HEIGHT DEFAULT_FONT_SIZE +10 
+#define DEFAULT_KEY_SPACING FONT_SIZE_DEFAULT /6
+#define DEFAULT_KEYS_ACROSS 16
+#define DEFAULT_KEYS_DOWN 20
+#define DEFAULT_KEY_PADDING FONT_SIZE_DEFAULT /7
+#define DEFAULT_SCREEN_WIDTH (KEY_WIDTH +KEY_SPACING) *KEYS_ACROSS +KEY_SPACING
+#define DEFAULT_SCREEN_HEIGHT (KEY_HEIGHT +KEY_SPACING) *KEYS_DOWN +KEY_SPACING
 
 #define FL __FILE__,__LINE__
 
@@ -38,6 +38,18 @@ struct key {
 
 
 struct globals {
+
+
+	int key_width;
+	int key_height;
+	int key_spacing;
+	int keys_across;
+	int keys_down;
+	int key_padding;
+
+	int screen_width;
+	int screen_height;
+
 	struct key keys[KEYMAP_SIZE];
 	int max_index;
 	char *map_filename;
@@ -47,6 +59,9 @@ struct globals {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	TTF_Font *font;
+	int font_size;
+	int font_size_px; // DPI converted font size
+	int dpi;
 
 	// Thresholds for testing
 	//
@@ -559,23 +574,54 @@ int map_default( struct globals *g ) {
 	return 0;
 }
 
+int init_font( struct globals *g ) {
+
+	g->font_size_px = g->font_size *g->dpi / 72;
+
+	TTF_Init();
+	SDL_RWops *fnt;
+	fnt = SDL_RWFromMem( font_ttf, sizeof(font_ttf) );
+	g->font = TTF_OpenFontRW( fnt, 0, g->font_size );
+	if (g->font == NULL) {
+		fprintf(stderr, "error: font not loaded\n");
+		exit(EXIT_FAILURE);
+	}
+
+	return 0;
+
+}
+
+int init_layout( struct globals *g ) {
+
+	g->key_padding = g->font_size /7;
+	g->key_width = g->font_size *5;
+	g->key_height = g->font_size +(2 *g->key_padding);
+	g->key_spacing = g->font_size /6;
+	g->keys_across = DEFAULT_KEYS_ACROSS;
+	g->keys_down = DEFAULT_KEYS_DOWN;
+	
+	g->screen_width = (g->key_width +g->key_spacing) *g->keys_across +g->key_spacing;
+	g->screen_height = (g->key_height +g->key_spacing) *g->keys_down +g->key_spacing;
+
+	return 0;
+}
+
+
 int init( struct globals *g ) {
 
 	int i;
-	SDL_RWops *fnt;
+	float f;
 
 	g->window = NULL;
 	g->renderer = NULL;
 	g->map_filename = NULL;
 	g->quit_on_complete = 0;
 
-	TTF_Init();
-	fnt = SDL_RWFromMem( font_ttf, sizeof(font_ttf) );
-	g->font = TTF_OpenFontRW( fnt, 0, FONT_SIZE );
-	if (g->font == NULL) {
-		fprintf(stderr, "error: font not loaded\n");
-		exit(EXIT_FAILURE);
-	}
+	i = SDL_GetDisplayDPI( 0, &f, NULL, NULL );
+	if (i != 0) g->dpi = DEFAULT_DPI;
+	else g->dpi = floor(f);
+	g->font_size = DEFAULT_FONT_SIZE;
+
 
 	// Initialise the scancode array with
 	// all flagged as untouched
@@ -639,6 +685,20 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 		else if (strcmp( p, "-m")==0) {
 			i++;
 			g->map_filename = argv[i];
+		}
+
+		else if (strcmp( p, "--fs" )==0) {
+			i++;
+			g->font_size = strtol( argv[i], NULL, 10 );
+			if (g->font_size < 4) g->font_size = 4;
+			if (g->font_size > 40) g->font_size = 40;
+		}
+
+		else if (strcmp( p, "--dpi" )==0) {
+			i++;
+			g->dpi = strtol( argv[i], NULL, 10 );
+			if (g->dpi < 70) g->dpi = 70;
+			if (g->dpi > 200) g->dpi = 200;
 		}
 
 		else if (strcmp( p, "--dl" )==0) {
@@ -749,8 +809,8 @@ int save_map( struct globals *g ) {
 int display_keys( struct globals *g ) {
 	int i;
 	SDL_Rect r;
-	r.w = KEY_WIDTH;
-	r.h = KEY_HEIGHT;
+	r.w = g->key_width;
+	r.h = g->key_height;
 
 	g->any_unpressed = 0;
 
@@ -769,8 +829,8 @@ int display_keys( struct globals *g ) {
 					SDL_Surface *surface = NULL;
 					SDL_Texture *texture = NULL;
 
-					r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
-					r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+					r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
+					r.y = g->key_spacing+ (i / g->keys_down) *( r.h +g->key_spacing);
 					SDL_RenderFillRect( g->renderer, &r );
 					surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
 					if (surface == NULL) {
@@ -779,7 +839,8 @@ int display_keys( struct globals *g ) {
 					}
 					texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 					SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-					SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+					//SDL_Rect dstrect = { r.x +g->key_padding, r.y +g->key_padding, texW, texH };
+					SDL_Rect dstrect = { r.x, r.y, texW, texH };
 					SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
 					SDL_DestroyTexture(texture);
 					SDL_FreeSurface(surface);
@@ -798,8 +859,8 @@ int display_keys( struct globals *g ) {
 				SDL_Texture *texture = NULL;
 				char dwell[20];
 
-				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
-				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+				r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
+				r.y = g->key_spacing+ (i / g->keys_down) *( r.h +g->key_spacing);
 
 				if (g->keys[i].flagged == 1) color.r = 255;
 				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
@@ -807,7 +868,7 @@ int display_keys( struct globals *g ) {
 				surface = TTF_RenderText_Blended(g->font, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-				SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+				SDL_Rect dstrect = { r.x +g->key_padding, r.y +g->key_padding, texW, texH };
 				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
 				SDL_DestroyTexture(texture);
 				SDL_FreeSurface(surface);
@@ -832,6 +893,10 @@ int main(int argc, char **argv) {
 
 	parse_parameters(g, argc, argv);
 
+	init_font(g); // we have to do this after parsing paramters so that we can get a font size change if required
+
+	init_layout(g); // work out all the sizes for the keys/padding/screen
+
 	if (g->map_filename != NULL) {
 		load_map(g, g->map_filename);
 	} else {
@@ -847,7 +912,7 @@ int main(int argc, char **argv) {
 	g->window = SDL_CreateWindow(
 			"Keyboard Tester",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			SCREEN_WIDTH, SCREEN_HEIGHT,
+			g->screen_width, g->screen_height,
 			SDL_WINDOW_SHOWN
 			);
 	if (g->window == NULL) {
