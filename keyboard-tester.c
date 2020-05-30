@@ -5,7 +5,9 @@
 #include <string.h>
 #include <time.h>
 
-#define FONT_NAME "font.ttf"
+#include "font.h"
+
+//#define FONT_NAME "font.ttf"
 #define FONT_SIZE 14
 
 #define PATH_MAX 4096
@@ -560,6 +562,7 @@ int map_default( struct globals *g ) {
 int init( struct globals *g ) {
 
 	int i;
+	SDL_RWops *fnt;
 
 	g->window = NULL;
 	g->renderer = NULL;
@@ -567,9 +570,10 @@ int init( struct globals *g ) {
 	g->quit_on_complete = 0;
 
 	TTF_Init();
-	g->font = TTF_OpenFont(FONT_NAME, FONT_SIZE );
+	fnt = SDL_RWFromMem( font_ttf, sizeof(font_ttf) );
+	g->font = TTF_OpenFontRW( fnt, 0, FONT_SIZE );
 	if (g->font == NULL) {
-		fprintf(stderr, "error: font not found\n");
+		fprintf(stderr, "error: font not loaded\n");
 		exit(EXIT_FAILURE);
 	}
 
