@@ -60,6 +60,7 @@ struct globals {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	TTF_Font *font;
+	TTF_Font *font_small;
 	int font_size;
 	int font_size_px; // DPI converted font size
 	int dpi;
@@ -587,6 +588,12 @@ int init_font( struct globals *g ) {
 		fprintf(stderr, "error: font not loaded\n");
 		exit(EXIT_FAILURE);
 	}
+	fnt = SDL_RWFromMem( font_ttf, sizeof(font_ttf) );
+	g->font_small = TTF_OpenFontRW( fnt, 0, g->font_size *2 /3 );
+	if (g->font == NULL) {
+		fprintf(stderr, "error: font not loaded\n");
+		exit(EXIT_FAILURE);
+	}
 
 	return 0;
 
@@ -890,7 +897,7 @@ int display_keys( struct globals *g ) {
 				if (g->keys[i].flagged == 1) color.r = 255;
 				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
-				surface = TTF_RenderText_Blended(g->font, dwell, color);
+				surface = TTF_RenderText_Blended(g->font_small, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
 				srcrect.w = texW;
