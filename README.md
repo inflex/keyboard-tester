@@ -4,7 +4,7 @@ Written so I could test macbook keyboards before sending back to clients after a
 
 Works on keyboard scancodes, not keycodes, so will work with all keyboards but you'll be left with varying levels of keys that aren't "pressed".
 
-#### ALPHA LEVEL DEVELOPMENT --- DON'T COMPLAIN ABOUT ANYTHING, ELSE I'LL LIKELY BITE
+#### BETA DEVELOPMENT --- Seems to be okay to use now
 
 ### Prerequisites
 
