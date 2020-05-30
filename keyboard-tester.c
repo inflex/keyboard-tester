@@ -39,6 +39,7 @@ struct key {
 
 struct globals {
 
+	int debug;
 
 	int key_width;
 	int key_height;
@@ -599,7 +600,7 @@ int init_layout( struct globals *g ) {
 	g->key_spacing = g->font_size /6;
 	g->keys_across = DEFAULT_KEYS_ACROSS;
 	g->keys_down = DEFAULT_KEYS_DOWN;
-	
+
 	g->screen_width = (g->key_width +g->key_spacing) *g->keys_across +g->key_spacing;
 	g->screen_height = (g->key_height +g->key_spacing) *g->keys_down +g->key_spacing;
 
@@ -612,6 +613,7 @@ int init( struct globals *g ) {
 	int i;
 	float f;
 
+	g->debug = 0;
 	g->window = NULL;
 	g->renderer = NULL;
 	g->map_filename = NULL;
@@ -647,7 +649,7 @@ int init( struct globals *g ) {
 
 int show_help( void ) {
 
-	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c] [--dpi <dpi>] [--fs <pts>]\n"
+	fprintf(stdout, "keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [-c] [--dpi <dpi>] [--fs <pts>] [-d]\n"
 			"\n"
 			"--dl <time (20 ms default)> : Set acceptable lower limit of key down time\n"
 			"--dh <time (200 ms default)> : Set acceptable upper limit of key down time\n"
@@ -656,6 +658,8 @@ int show_help( void ) {
 			"\n"
 			"--dpi <dpi> : Force screen DPI\n"
 			"--fs <pts> : Set font size in pts\n"
+			"\n"
+			"-d : Enable debugging output\n"
 			"\n"
 			"\tALT/OPT-Q: exit/quit\n"
 			"\tALT/OPT-M: Save current pressed keyset to mapfile\n"
@@ -680,6 +684,10 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 			show_help();
 			exit(0);
 		} 
+
+		else if (strcmp( p, "-d")==0) {
+			g->debug = 1;
+		}
 
 		else if (strcmp( p, "-c")==0) {
 			g->quit_on_complete = 1;
@@ -811,20 +819,33 @@ int save_map( struct globals *g ) {
 
 int display_keys( struct globals *g ) {
 	int i;
-	SDL_Rect r;
-	r.w = g->key_width;
-	r.h = g->key_height;
 
 	g->any_unpressed = 0;
 
 
 
 	for (i = 0; i <= g->max_index; i++) {
+
+		SDL_Rect r;
+		r.w = g->key_width;
+		r.h = g->key_height;
+		r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
+		r.y = g->key_spacing+ (i / g->keys_across) *( r.h +g->key_spacing);
+
+		if (g->debug) fprintf(stderr,"[%d] = '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
+
 		if (g->keys[i].name != NULL) {
+
 			if ( g->keys[i].pressed < 2 ) {
 				g->any_unpressed = 1;
-				if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
-				else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
+
+				if (g->keys[i].pressed == 0) {
+					SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
+
+				} else if (g->keys[i].pressed == 1) {
+					SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
+				}
+
 				if (g->keys[i].group == 0) {
 					int texW = 0;
 					int texH = 0;
@@ -832,8 +853,6 @@ int display_keys( struct globals *g ) {
 					SDL_Surface *surface = NULL;
 					SDL_Texture *texture = NULL;
 
-					r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
-					r.y = g->key_spacing+ (i / g->keys_down) *( r.h +g->key_spacing);
 					SDL_RenderFillRect( g->renderer, &r );
 					surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
 					if (surface == NULL) {
@@ -842,9 +861,12 @@ int display_keys( struct globals *g ) {
 					}
 					texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 					SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-					//SDL_Rect dstrect = { r.x +g->key_padding, r.y +g->key_padding, texW, texH };
+					SDL_Rect srcrect = { 0, 0, texW, texH };
 					SDL_Rect dstrect = { r.x, r.y, texW, texH };
-					SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+					if (texW > g->key_width) {
+						dstrect.w = g->key_width;
+					}
+					SDL_RenderCopy(g->renderer, texture, &srcrect, &dstrect);
 					SDL_DestroyTexture(texture);
 					SDL_FreeSurface(surface);
 				} // if group 0
@@ -860,25 +882,33 @@ int display_keys( struct globals *g ) {
 				SDL_Color color = { 0, 0, 0 };
 				SDL_Surface *surface = NULL;
 				SDL_Texture *texture = NULL;
+				SDL_Rect srcrect = { 0, 0, 0, 0 };
+				SDL_Rect dstrect = { r.x, r.y, 0, 0};
 				char dwell[20];
-
-				r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
-				r.y = g->key_spacing+ (i / g->keys_down) *( r.h +g->key_spacing);
+				
 
 				if (g->keys[i].flagged == 1) color.r = 255;
-				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
+				if (g->debug) snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
 				surface = TTF_RenderText_Blended(g->font, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-				SDL_Rect dstrect = { r.x +g->key_padding, r.y +g->key_padding, texW, texH };
-				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+				srcrect.w = texW;
+				srcrect.h = texH;
+				dstrect.h = texH;
+				if (texW > g->key_width) {
+					dstrect.w = g->key_width;
+				} else dstrect.w = texW;
+
+				fprintf(stderr,"[%d] =>> '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
+
+				SDL_RenderCopy(g->renderer, texture, &srcrect, &dstrect);
 				SDL_DestroyTexture(texture);
 				SDL_FreeSurface(surface);
-			}
+			} // if the key has been pressed
 
-		}
-	}
+		} // if key isn't empty/null
+	} // for every index of the keymap
 
 	SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
 
