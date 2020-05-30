@@ -41,6 +41,7 @@ struct globals {
 
 	int debug;
 
+	int key_count;
 	int key_width, kwo;
 	int key_height, kho;
 	int key_spacing, kso;
@@ -48,6 +49,7 @@ struct globals {
 	int keys_down;
 	int key_padding;
 
+	int compact;
 	int screen_width;
 	int screen_height;
 
@@ -603,11 +605,21 @@ int init_font( struct globals *g ) {
 
 int init_layout( struct globals *g ) {
 
+	if (g->compact == 1) {
+		for (int i = 0; i < KEYMAP_SIZE; i++) {
+			if (g->keys[i].name != NULL && *g->keys[i].name != '\0' && g->keys[i].group == 0) {
+				g->key_count++;
+			}
+		}
+	} else {
+		g->key_count = KEYMAP_SIZE;
+	}
+
 	g->key_padding = g->font_size /7;
 	if (g->kwo == 0) g->key_width = g->font_size *5;
 	if (g->kho == 0) g->key_height = g->font_size +(2 *g->key_padding);
 	if (g->kso == 0) g->key_spacing = g->font_size /6;
-	g->keys_down = KEYMAP_SIZE /g->keys_across +1;
+	g->keys_down = g->key_count /g->keys_across +1;
 
 	g->font_size_px = g->font_size *g->dpi / 72;
 	if (g->key_height < g->font_size_px) {
@@ -637,6 +649,7 @@ int init( struct globals *g ) {
 	float f;
 
 	g->debug = 0;
+	g->compact = 0;
 	g->window = NULL;
 	g->renderer = NULL;
 	g->map_filename = NULL;
@@ -696,6 +709,7 @@ int show_help( void ) {
 			"--kheight <px> : Height of key in pixels\n"
 			"--kspacing <px> : Gap between keys in pixels\n"
 			"--columns <n> : How many columns of keys to show\n"
+			"--compact : Remove null/empty keys from grid display\n"
 			"\n"
 			"--colbg <rrggbb> : background\n"
 			"--colkey <rrggbb> : key block\n"
@@ -745,6 +759,10 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 		else if (strcmp( p, "-m")==0) {
 			i++;
 			g->map_filename = argv[i];
+		}
+
+		else if (strcmp( p, "--compact")==0) {
+			g->compact = 1;
 		}
 
 		else if (strcmp( p, "--fscale")==0) {
@@ -958,18 +976,22 @@ int save_map( struct globals *g ) {
 
 int display_keys( struct globals *g ) {
 	int i;
+	int ki;
 
 	g->any_unpressed = 0;
 
 
 
+	ki = 0;
 	for (i = 0; i <= g->max_index; i++) {
-
 		SDL_Rect r;
+
+		if (g->compact == 0) ki = i;
+
 		r.w = g->key_width;
 		r.h = g->key_height;
-		r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
-		r.y = g->key_spacing+ (i / g->keys_across) *( r.h +g->key_spacing);
+		r.x = g->key_spacing+ (ki % g->keys_across) *( r.w +g->key_spacing);
+		r.y = g->key_spacing+ (ki / g->keys_across) *( r.h +g->key_spacing);
 
 		if (g->debug) fprintf(stderr,"%s:%d: [%d] = '%s' => ( %d %d ) - ( %d x %d )\n", FL, i, g->keys[i].name, r.x, r.y, r.w, r.h );
 
@@ -1048,6 +1070,7 @@ int display_keys( struct globals *g ) {
 			} // if the key has been pressed
 
 		} // if key isn't empty/null
+		if (g->keys[i].group == 0) ki++;
 	} // for every index of the keymap
 
 	SDL_SetRenderDrawColor( g->renderer, g->color_bg.r, g->color_bg.g, g->color_bg.b, 255 );
@@ -1066,9 +1089,6 @@ int main(int argc, char **argv) {
 
 	parse_parameters(g, argc, argv);
 
-	init_font(g); // we have to do this after parsing paramters so that we can get a font size change if required
-
-	init_layout(g); // work out all the sizes for the keys/padding/screen
 
 	if (g->map_filename != NULL) {
 		load_map(g, g->map_filename);
@@ -1076,6 +1096,8 @@ int main(int argc, char **argv) {
 		map_default(g);
 	}
 
+	init_font(g); // we have to do this after parsing paramters so that we can get a font size change if required
+	init_layout(g); // work out all the sizes for the keys/padding/screen
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());

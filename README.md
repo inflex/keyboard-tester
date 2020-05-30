@@ -36,6 +36,7 @@ keyboard-tester [--dl <lower bound ms>] [--dh <upper bound ms>] [-m <mapfile>] [
 --kheight <px> : Height of key in pixels
 --kspacing <px> : Gap between keys in pixels
 --columns <n> : How many columns of keys to show
+--compact : Remove null/empty keys from grid display
 
 --colbg <rrggbb> : background
 --colkey <rrggbb> : key block
