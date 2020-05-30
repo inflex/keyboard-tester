@@ -41,9 +41,9 @@ struct globals {
 
 	int debug;
 
-	int key_width;
-	int key_height;
-	int key_spacing;
+	int key_width, kwo;
+	int key_height, kho;
+	int key_spacing, kso;
 	int keys_across;
 	int keys_down;
 	int key_padding;
@@ -57,6 +57,8 @@ struct globals {
 	int quit_on_complete;
 	int any_unpressed;
 
+	SDL_Color color_report, color_text, color_pressed, color_key, color_bg, color_flagged;
+
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	TTF_Font *font;
@@ -64,6 +66,7 @@ struct globals {
 	int font_size;
 	int font_size_px; // DPI converted font size
 	int dpi;
+	int font_crop;
 
 	// Thresholds for testing
 	//
@@ -578,7 +581,6 @@ int map_default( struct globals *g ) {
 
 int init_font( struct globals *g ) {
 
-	g->font_size_px = g->font_size *g->dpi / 72;
 
 	TTF_Init();
 	SDL_RWops *fnt;
@@ -602,11 +604,18 @@ int init_font( struct globals *g ) {
 int init_layout( struct globals *g ) {
 
 	g->key_padding = g->font_size /7;
-	g->key_width = g->font_size *5;
-	g->key_height = g->font_size +(2 *g->key_padding);
-	g->key_spacing = g->font_size /6;
-	g->keys_across = DEFAULT_KEYS_ACROSS;
-	g->keys_down = DEFAULT_KEYS_DOWN;
+	if (g->kwo == 0) g->key_width = g->font_size *5;
+	if (g->kho == 0) g->key_height = g->font_size +(2 *g->key_padding);
+	if (g->kso == 0) g->key_spacing = g->font_size /6;
+	g->keys_down = KEYMAP_SIZE /g->keys_across +1;
+
+	g->font_size_px = g->font_size *g->dpi / 72;
+	if (g->key_height < g->font_size_px) {
+		g->font_size = (g->key_height -2) *72 / g->dpi;
+		g->font_size_px = g->key_height -2;
+		fprintf(stderr, "Forcing resize of font (%dpt) to fit key height (%dpx)\n", g->font_size, g->key_height);
+	}
+
 
 	g->screen_width = (g->key_width +g->key_spacing) *g->keys_across +g->key_spacing;
 	g->screen_height = (g->key_height +g->key_spacing) *g->keys_down +g->key_spacing;
@@ -614,6 +623,13 @@ int init_layout( struct globals *g ) {
 	return 0;
 }
 
+
+int set_color( SDL_Color *c, int r, int g, int b ) {
+	c->r = r;
+	c->g = g;
+	c->b = b;
+	return 0;
+}
 
 int init( struct globals *g ) {
 
@@ -626,11 +642,22 @@ int init( struct globals *g ) {
 	g->map_filename = NULL;
 	g->quit_on_complete = 0;
 
+	g->kwo = g->kso = g->kho = 0;
+
 	i = SDL_GetDisplayDPI( 0, &f, NULL, NULL );
 	if (i != 0) g->dpi = DEFAULT_DPI;
 	else g->dpi = floor(f);
 	g->font_size = DEFAULT_FONT_SIZE;
+	g->font_crop = 1;
 
+	set_color( &g->color_report, 0,0,0);
+	set_color( &g->color_text, 250,250,250);
+	set_color( &g->color_pressed, 255, 10, 10);
+	set_color( &g->color_key, 10, 10, 255);
+	set_color( &g->color_bg, 255,255,255);
+	set_color( &g->color_flagged, 255,0,0);
+
+	//, color_text, color_pressed, color_key, color_bg;
 
 	// Initialise the scancode array with
 	// all flagged as untouched
@@ -644,6 +671,8 @@ int init( struct globals *g ) {
 		g->keys[i].y = 0;
 		g->keys[i].flagged = 0;
 	}
+
+	g->keys_across = DEFAULT_KEYS_ACROSS;
 
 	g->dwell_lower = 20; // anything shorter and probably not making full contact
 	g->dwell_upper = 200; // anything longer and key is slow to return
@@ -663,8 +692,21 @@ int show_help( void ) {
 			"-m <mapfile> : Set keyboard map to use, limits keys and sets names to test\n"
 			"-c : Close tester when all keys have been pressed\n"
 			"\n"
+			"--kwidth <px> : Width of key in pixels\n"
+			"--kheight <px> : Height of key in pixels\n"
+			"--kspacing <px> : Gap between keys in pixels\n"
+			"--columns <n> : How many columns of keys to show\n"
+			"\n"
+			"--colbg <rrggbb> : background\n"
+			"--colkey <rrggbb> : key block\n"
+			"--coltext <rrggbb> : key text\n"
+			"--colpressed <rrggbb> : key block colour while pressed\n"
+			"--colreport <rrggbb> : after-pressed report text (normal)\n"
+			"--colflagged <rrggbb> : after-pressed report text (flagged)\n"
+			"\n"
 			"--dpi <dpi> : Force screen DPI\n"
 			"--fs <pts> : Set font size in pts\n"
+			"--fscale : Scale the key text rather than cropping\n"
 			"\n"
 			"-d : Enable debugging output\n"
 			"\n"
@@ -705,11 +747,100 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 			g->map_filename = argv[i];
 		}
 
+		else if (strcmp( p, "--fscale")==0) {
+			g->font_crop = 0;
+		}
+
+		else if (strcmp( p, "--colbg" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_bg.r
+					, &g->color_bg.g
+					, &g->color_bg.b
+					);
+		}
+		else if (strcmp( p, "--colkey" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_key.r
+					, &g->color_key.g
+					, &g->color_key.b
+					);
+		}
+		else if (strcmp( p, "--colpressed" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_pressed.r
+					, &g->color_pressed.g
+					, &g->color_pressed.b
+					);
+		}
+		else if (strcmp( p, "--coltext" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_text.r
+					, &g->color_text.g
+					, &g->color_text.b
+					);
+		}
+		else if (strcmp( p, "--colreport" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_report.r
+					, &g->color_report.g
+					, &g->color_report.b
+					);
+		}
+		else if (strcmp( p, "--colflagged" )==0) {
+			i++;
+			sscanf(argv[i], "%2hhx%2hhx%2hhx"
+					, &g->color_flagged.r
+					, &g->color_flagged.g
+					, &g->color_flagged.b
+					);
+		}
+
+
+		else if (strcmp( p, "--kwidth" )==0) {
+			i++;
+			g->key_width = strtol( argv[i], NULL, 10 );
+			if (g->key_width < 20) g->key_width = 20;
+			if (g->key_width > 200) g->key_width = 200;
+			if (g->debug) fprintf(stderr,"%s:%d: Key width set to %dpx\n", FL, g->key_width);
+			g->kwo = 1;
+		}
+
+		else if (strcmp( p, "--kheight" )==0) {
+			i++;
+			g->key_height = strtol( argv[i], NULL, 10 );
+			if (g->key_height < 10) g->key_height = 10;
+			if (g->key_height > 60) g->key_height = 60;
+			if (g->debug) fprintf(stderr,"%s:%d: Key height set to %dpx\n", FL, g->key_height);
+			g->kho = 1;
+		}
+
+		else if (strcmp( p, "--kspacing" )==0) {
+			i++;
+			g->key_spacing = strtol( argv[i], NULL, 10 );
+			if (g->key_spacing < 0) g->key_spacing = 0;
+			if (g->key_spacing > 20) g->key_spacing = 20;
+			if (g->debug) fprintf(stderr,"%s:%d: Key spacing set to %dpx\n", FL, g->key_spacing);
+			g->kso = 1;
+		}
+
+		else if (strcmp( p, "--columns" )==0) {
+			i++;
+			g->keys_across = strtol( argv[i], NULL, 10 );
+			if (g->keys_across < 1) g->keys_across = 1;
+			if (g->debug) fprintf(stderr,"%s:%d: Columns set to %d\n", FL, g->keys_across);
+		}
+
 		else if (strcmp( p, "--fs" )==0) {
 			i++;
 			g->font_size = strtol( argv[i], NULL, 10 );
 			if (g->font_size < 4) g->font_size = 4;
 			if (g->font_size > 40) g->font_size = 40;
+			if (g->debug) fprintf(stderr,"%s:%d: Font size set to %dpt\n", FL, g->font_size);
 		}
 
 		else if (strcmp( p, "--dpi" )==0) {
@@ -717,6 +848,7 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 			g->dpi = strtol( argv[i], NULL, 10 );
 			if (g->dpi < 70) g->dpi = 70;
 			if (g->dpi > 200) g->dpi = 200;
+			if (g->debug) fprintf(stderr,"%s:%d: DPI set to %d\n", FL, g->dpi);
 		}
 
 		else if (strcmp( p, "--dl" )==0) {
@@ -811,7 +943,7 @@ int save_map( struct globals *g ) {
 
 		for (i = 0; i <= g->max_index; i++) {
 			if (g->keys[i].pressed == 2) {
-				fprintf(stdout, "scancode:%d group:%d name:%s\n", i, g->keys[i].group, g->keys[i].name);
+				if (g->debug) fprintf(stdout, "%s:%d: scancode:%d group:%d name:%s\n", FL, i, g->keys[i].group, g->keys[i].name);
 				fprintf(f, "scancode:%d group:%d name:%s\n", i, g->keys[i].group, g->keys[i].name);
 			}
 		}
@@ -839,7 +971,7 @@ int display_keys( struct globals *g ) {
 		r.x = g->key_spacing+ (i % g->keys_across) *( r.w +g->key_spacing);
 		r.y = g->key_spacing+ (i / g->keys_across) *( r.h +g->key_spacing);
 
-		if (g->debug) fprintf(stderr,"[%d] = '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
+		if (g->debug) fprintf(stderr,"%s:%d: [%d] = '%s' => ( %d %d ) - ( %d x %d )\n", FL, i, g->keys[i].name, r.x, r.y, r.w, r.h );
 
 		if (g->keys[i].name != NULL) {
 
@@ -847,21 +979,20 @@ int display_keys( struct globals *g ) {
 				g->any_unpressed = 1;
 
 				if (g->keys[i].pressed == 0) {
-					SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
+					SDL_SetRenderDrawColor( g->renderer,  g->color_key.r, g->color_key.g, g->color_key.b, 255 );
 
 				} else if (g->keys[i].pressed == 1) {
-					SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
+					SDL_SetRenderDrawColor( g->renderer, g->color_pressed.r, g->color_pressed.g, g->color_pressed.b, 255);
 				}
 
 				if (g->keys[i].group == 0) {
 					int texW = 0;
 					int texH = 0;
-					SDL_Color color = { 255, 255, 255 };
 					SDL_Surface *surface = NULL;
 					SDL_Texture *texture = NULL;
 
 					SDL_RenderFillRect( g->renderer, &r );
-					surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
+					surface = TTF_RenderText_Blended(g->font, g->keys[i].name, g->color_text);
 					if (surface == NULL) {
 						fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
 						exit(1);
@@ -871,7 +1002,8 @@ int display_keys( struct globals *g ) {
 					SDL_Rect srcrect = { 0, 0, texW, texH };
 					SDL_Rect dstrect = { r.x, r.y, texW, texH };
 					if (texW > g->key_width) {
-						dstrect.w = g->key_width;
+						if (g->font_crop) srcrect.w = dstrect.w = g->key_width;
+						else dstrect.w = g->key_width;
 					}
 					SDL_RenderCopy(g->renderer, texture, &srcrect, &dstrect);
 					SDL_DestroyTexture(texture);
@@ -886,25 +1018,26 @@ int display_keys( struct globals *g ) {
 				//
 				int texW = 0;
 				int texH = 0;
-				SDL_Color color = { 0, 0, 0 };
 				SDL_Surface *surface = NULL;
 				SDL_Texture *texture = NULL;
 				SDL_Rect srcrect = { 0, 0, 0, 0 };
 				SDL_Rect dstrect = { r.x, r.y, 0, 0};
+				SDL_Color *color = &g->color_report;
 				char dwell[20];
-				
 
-				if (g->keys[i].flagged == 1) color.r = 255;
+
+				if (g->keys[i].flagged == 1) color = &g->color_flagged;
 				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
 
-				surface = TTF_RenderText_Blended(g->font_small, dwell, color);
+				surface = TTF_RenderText_Blended(g->font_small, dwell, *color );
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
 				srcrect.w = texW;
 				srcrect.h = texH;
 				dstrect.h = texH;
 				if (texW > g->key_width) {
-					dstrect.w = g->key_width;
+					if (g->font_crop) srcrect.w = dstrect.w = g->key_width;
+					else dstrect.w = g->key_width;
 				} else dstrect.w = texW;
 
 				if (g->debug) fprintf(stderr,"[%d] =>> '%s' => ( %d %d ) - ( %d x %d )\n", i, g->keys[i].name, r.x, r.y, r.w, r.h );
@@ -917,7 +1050,7 @@ int display_keys( struct globals *g ) {
 		} // if key isn't empty/null
 	} // for every index of the keymap
 
-	SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+	SDL_SetRenderDrawColor( g->renderer, g->color_bg.r, g->color_bg.g, g->color_bg.b, 255 );
 
 	return 0;
 }
@@ -968,8 +1101,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	// Set render color to red ( background will be rendered in this color )
-	SDL_SetRenderDrawColor( g->renderer, 255, 255, 255, 255 );
+	SDL_SetRenderDrawColor( g->renderer, g->color_bg.r, g->color_bg.g, g->color_bg.b, 255 );
 
 	// Clear winow
 	SDL_RenderClear( g->renderer );
