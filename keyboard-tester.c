@@ -5,13 +5,15 @@
 #include <string.h>
 #include <time.h>
 
+#define FONT_NAME "font.ttf"
+#define FONT_SIZE 14
 
 #define PATH_MAX 4096
 
 #define KEYMAP_SIZE 285 // how many actual keyboard scancodes there are that SDL2 recognises
 
 #define KEY_WIDTH 70
-#define KEY_HEIGHT 20
+#define KEY_HEIGHT FONT_SIZE+10 
 #define KEY_SPACING 3
 #define KEYS_ACROSS 16
 #define KEYS_DOWN 20
@@ -21,7 +23,6 @@
 
 #define FL __FILE__,__LINE__
 
-#define FONT_NAME "font.ttf"
 
 
 struct key {
@@ -101,27 +102,27 @@ int map_default( struct globals *g ) {
 
 	g->keys[39].name = "0";
 	g->keys[40].name = "RETURN";
-	g->keys[41].name = "ESCAPE";
+	g->keys[41].name = "ESC";
 	g->keys[42].name = "BACKSPACE";
 
 	g->keys[43].name = "TAB";
 	g->keys[44].name = "SPACE";
-	g->keys[45].name = "MINUS";
-	g->keys[46].name = "EQUALS";
+	g->keys[45].name = "-";
+	g->keys[46].name = "=";
 
-	g->keys[47].name = "LEFTBRACKET";
-	g->keys[48].name = "RIGHTBRACKET";
-	g->keys[49].name = "BACKSLASH";
+	g->keys[47].name = "(";
+	g->keys[48].name = ")";
+	g->keys[49].name = "\\";
 	g->keys[50].name = "NONUSHASH";
 
-	g->keys[51].name = "SEMICOLON";
-	g->keys[52].name = "APOSTROPHE";
-	g->keys[53].name = "GRAVE";
-	g->keys[54].name = "COMMA";
+	g->keys[51].name = ";";
+	g->keys[52].name = "!";
+	g->keys[53].name = "`";
+	g->keys[54].name = ",";
 
-	g->keys[55].name = "PERIOD";
-	g->keys[56].name = "SLASH";
-	g->keys[57].name = "CAPSLOCK";
+	g->keys[55].name = ".";
+	g->keys[56].name = "/";
+	g->keys[57].name = "CAPS";
 	g->keys[58].name = "F1";
 
 	g->keys[59].name = "F2";
@@ -137,17 +138,17 @@ int map_default( struct globals *g ) {
 	g->keys[67].name = "F10";
 	g->keys[68].name = "F11";
 	g->keys[69].name = "F12";
-	g->keys[70].name = "PRINTSCREEN";
+	g->keys[70].name = "PRNTSCR";
 
 	g->keys[71].name = "SCROLLLOCK";
 	g->keys[72].name = "PAUSE";
 	g->keys[73].name = "INSERT";
 	g->keys[74].name = "HOME";
 
-	g->keys[75].name = "PAGEUP";
-	g->keys[76].name = "DELETE";
+	g->keys[75].name = "PGUP";
+	g->keys[76].name = "DEL";
 	g->keys[77].name = "END";
-	g->keys[78].name = "PAGEDOWN";
+	g->keys[78].name = "PGDN";
 
 	g->keys[79].name = "RIGHT";
 	g->keys[80].name = "LEFT";
@@ -155,12 +156,12 @@ int map_default( struct globals *g ) {
 	g->keys[82].name = "UP";
 
 	g->keys[83].name = "NUMLOCKCLEAR";
-	g->keys[84].name = "KP_DIVIDE";
-	g->keys[85].name = "KP_MULTIPLY";
-	g->keys[86].name = "KP_MINUS";
+	g->keys[84].name = "KP_/";
+	g->keys[85].name = "KP_*";
+	g->keys[86].name = "KP_-";
 
-	g->keys[87].name = "KP_PLUS";
-	g->keys[88].name = "KP_ENTER";
+	g->keys[87].name = "KP_+";
+	g->keys[88].name = "KP_ENT";
 	g->keys[89].name = "KP_1";
 	g->keys[90].name = "KP_2";
 
@@ -174,12 +175,12 @@ int map_default( struct globals *g ) {
 	g->keys[97].name = "KP_9";
 	g->keys[98].name = "KP_0";
 
-	g->keys[99].name = "KP_PERIOD";
+	g->keys[99].name = "KP_.";
 	g->keys[100].name = "NONUSBACKSLASH";
-	g->keys[101].name = "APPLICATION";
+	g->keys[101].name = "APP";
 	g->keys[102].name = "POWER";
 
-	g->keys[103].name = "KP_EQUALS";
+	g->keys[103].name = "KP_=";
 	g->keys[104].name = "F13";
 	g->keys[105].name = "F14";
 	g->keys[106].name = "F15";
@@ -210,22 +211,22 @@ int map_default( struct globals *g ) {
 	g->keys[126].name = "FIND";
 
 	g->keys[127].name = "MUTE";
-	g->keys[128].name = "VOLUMEUP";
-	g->keys[129].name = "VOLUMEDOWN";
-	g->keys[133].name = "KP_COMMA";
+	g->keys[128].name = "VOLUP";
+	g->keys[129].name = "VOLDN";
+	g->keys[133].name = "KP_,";
 
-	g->keys[134].name = "KP_EQUALSAS400";
-	g->keys[135].name = "INTERNATIONAL1";
-	g->keys[136].name = "INTERNATIONAL2";
-	g->keys[137].name = "INTERNATIONAL3";
+	g->keys[134].name = "KP_=";
+	g->keys[135].name = "INTL1";
+	g->keys[136].name = "INTL2";
+	g->keys[137].name = "INTL3";
 
-	g->keys[138].name = "INTERNATIONAL4";
-	g->keys[139].name = "INTERNATIONAL5";
-	g->keys[140].name = "INTERNATIONAL6";
-	g->keys[141].name = "INTERNATIONAL7";
+	g->keys[138].name = "INTL4";
+	g->keys[139].name = "INTL5";
+	g->keys[140].name = "INTL6";
+	g->keys[141].name = "INTL7";
 
-	g->keys[142].name = "INTERNATIONAL8";
-	g->keys[143].name = "INTERNATIONAL9";
+	g->keys[142].name = "INTL8";
+	g->keys[143].name = "INTL9";
 	g->keys[144].name = "LANG1";
 	g->keys[145].name = "LANG2";
 
@@ -260,13 +261,13 @@ int map_default( struct globals *g ) {
 	g->keys[180].name = "CURRENCYUNIT";
 
 	g->keys[181].name = "CURRENCYSUBUNIT";
-	g->keys[182].name = "KP_LEFTPAREN";
-	g->keys[183].name = "KP_RIGHTPAREN";
-	g->keys[184].name = "KP_LEFTBRACE";
+	g->keys[182].name = "KP_(";
+	g->keys[183].name = "KP_)";
+	g->keys[184].name = "KP_{";
 
-	g->keys[185].name = "KP_RIGHTBRACE";
+	g->keys[185].name = "KP_}";
 	g->keys[186].name = "KP_TAB";
-	g->keys[187].name = "KP_BACKSPACE";
+	g->keys[187].name = "KP_BKSPC";
 	g->keys[188].name = "KP_A";
 
 	g->keys[189].name = "KP_B";
@@ -321,31 +322,31 @@ int map_default( struct globals *g ) {
 
 	g->keys[231].name = "RGUI";
 	g->keys[257].name = "MODE";
-	g->keys[258].name = "AUDIONEXT";
-	g->keys[259].name = "AUDIOPREV";
+	g->keys[258].name = "AUNEXT";
+	g->keys[259].name = "AUPREV";
 
-	g->keys[260].name = "AUDIOSTOP";
-	g->keys[261].name = "AUDIOPLAY";
-	g->keys[262].name = "AUDIOMUTE";
-	g->keys[263].name = "MEDIASELECT";
+	g->keys[260].name = "AUSTOP";
+	g->keys[261].name = "AUPLAY";
+	g->keys[262].name = "AUMUTE";
+	g->keys[263].name = "MEDIASEL";
 
 	g->keys[264].name = "WWW";
 	g->keys[265].name = "MAIL";
-	g->keys[266].name = "CALCULATOR";
-	g->keys[267].name = "COMPUTER";
+	g->keys[266].name = "CALC";
+	g->keys[267].name = "COMPTR";
 
-	g->keys[268].name = "AC_SEARCH";
-	g->keys[269].name = "AC_HOME";
-	g->keys[270].name = "AC_BACK";
-	g->keys[271].name = "AC_FORWARD";
+	g->keys[268].name = "SEARCH";
+	g->keys[269].name = "HOME";
+	g->keys[270].name = "BACK";
+	g->keys[271].name = "FORWARD";
 
-	g->keys[272].name = "AC_STOP";
-	g->keys[273].name = "AC_REFRESH";
-	g->keys[274].name = "AC_BOOKMARKS";
-	g->keys[275].name = "BRIGHTNESSDOWN";
+	g->keys[272].name = "STOP";
+	g->keys[273].name = "REFRESH";
+	g->keys[274].name = "BOOKMARKS";
+	g->keys[275].name = "BRIGHTDN";
 
-	g->keys[276].name = "BRIGHTNESSUP";
-	g->keys[277].name = "DISPLAYSWITCH";
+	g->keys[276].name = "BRIGHTUP";
+	g->keys[277].name = "DISPSW";
 	g->keys[278].name = "KBDILLUMTOGGLE";
 	g->keys[279].name = "KBDILLUMDOWN";
 	g->keys[280].name = "KBDILLUMUP";
@@ -566,7 +567,7 @@ int init( struct globals *g ) {
 	g->quit_on_complete = 0;
 
 	TTF_Init();
-	g->font = TTF_OpenFont(FONT_NAME, 10 );
+	g->font = TTF_OpenFont(FONT_NAME, FONT_SIZE );
 	if (g->font == NULL) {
 		fprintf(stderr, "error: font not found\n");
 		exit(EXIT_FAILURE);
@@ -656,6 +657,7 @@ int parse_parameters( struct globals *g, int argc, char **argv ) {
 	return 0;
 } // parse paramters
 
+
 int print_keyboard( struct globals *g ) {
 
 	int i;
@@ -663,13 +665,15 @@ int print_keyboard( struct globals *g ) {
 	fprintf(stdout,"\n-----------------------------\n");
 	for (i = 0; i <= g->max_index; i++) {
 		if ( g->keys[i].pressed == 0  && g->keys[i].group == 0) {
-			if (*g->keys[0].name != '\0') fprintf(stdout, "%s ", g->keys[i].name);
+			if (*g->keys[i].name != '\0') fprintf(stdout, "%s ", g->keys[i].name);
 		}
 		if (i%10 == 0) fprintf(stdout,"\n");
 	}
 
 	return 0;
 }
+
+
 int dump_remaining( struct globals *g ) {
 
 	int i;
@@ -685,6 +689,7 @@ int dump_remaining( struct globals *g ) {
 
 	return 0;
 }
+
 
 int load_map( struct globals *g, char *fn ) {
 	FILE *f;
@@ -708,6 +713,7 @@ int load_map( struct globals *g, char *fn ) {
 	}
 	return 0;
 }
+
 
 int save_map( struct globals *g ) {
 
@@ -734,6 +740,8 @@ int save_map( struct globals *g ) {
 	return 0;
 }
 
+
+
 int display_keys( struct globals *g ) {
 	int i;
 	SDL_Rect r;
@@ -746,60 +754,60 @@ int display_keys( struct globals *g ) {
 
 	for (i = 0; i <= g->max_index; i++) {
 		if (g->keys[i].name != NULL) {
-		if ( g->keys[i].pressed < 2 ) {
-			g->any_unpressed = 1;
-			if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
-			else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
-			if (g->keys[i].group == 0) {
+			if ( g->keys[i].pressed < 2 ) {
+				g->any_unpressed = 1;
+				if (g->keys[i].pressed == 0) SDL_SetRenderDrawColor( g->renderer,  0, 0, 255, 255 );
+				else if (g->keys[i].pressed == 1) SDL_SetRenderDrawColor( g->renderer, 255, 0, 0, 255);
+				if (g->keys[i].group == 0) {
+					int texW = 0;
+					int texH = 0;
+					SDL_Color color = { 255, 255, 255 };
+					SDL_Surface *surface = NULL;
+					SDL_Texture *texture = NULL;
+
+					r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
+					r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
+					SDL_RenderFillRect( g->renderer, &r );
+					surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
+					if (surface == NULL) {
+						fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
+						exit(1);
+					}
+					texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+					SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
+					SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
+					SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
+					SDL_DestroyTexture(texture);
+					SDL_FreeSurface(surface);
+				} // if group 0
+
+			} // if pressed < 2
+
+			else {
+
+				// leave behind stats of the key press
+				//
 				int texW = 0;
 				int texH = 0;
-				SDL_Color color = { 255, 255, 255 };
+				SDL_Color color = { 0, 0, 0 };
 				SDL_Surface *surface = NULL;
 				SDL_Texture *texture = NULL;
+				char dwell[20];
 
 				r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
 				r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
-				SDL_RenderFillRect( g->renderer, &r );
-				surface = TTF_RenderText_Blended(g->font, g->keys[i].name, color);
-				if (surface == NULL) {
-					fprintf(stderr,"Error creating surface for text (%s)\n", SDL_GetError());
-					exit(1);
-				}
+
+				if (g->keys[i].flagged == 1) color.r = 255;
+				snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
+
+				surface = TTF_RenderText_Blended(g->font, dwell, color);
 				texture = SDL_CreateTextureFromSurface(g->renderer, surface);
 				SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
 				SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
 				SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
 				SDL_DestroyTexture(texture);
 				SDL_FreeSurface(surface);
-			} // if group 0
-
-		} // if pressed < 2
-
-		else {
-
-			// leave behind stats of the key press
-			//
-			int texW = 0;
-			int texH = 0;
-			SDL_Color color = { 0, 0, 0 };
-			SDL_Surface *surface = NULL;
-			SDL_Texture *texture = NULL;
-			char dwell[20];
-
-			r.x = KEY_SPACING + (i % KEYS_ACROSS) *( r.w +KEY_SPACING );
-			r.y = KEY_SPACING + (i / KEYS_ACROSS) *( r.h +KEY_SPACING );
-
-			if (g->keys[i].flagged == 1) color.r = 255;
-			snprintf(dwell, sizeof(dwell), "[%u]%s", g->keys[i].delta, g->keys[i].name );
-
-			surface = TTF_RenderText_Blended(g->font, dwell, color);
-			texture = SDL_CreateTextureFromSurface(g->renderer, surface);
-			SDL_QueryTexture(texture, NULL, NULL, &texW, &texH);
-			SDL_Rect dstrect = { r.x +KEY_PADDING, r.y +KEY_PADDING, texW, texH };
-			SDL_RenderCopy(g->renderer, texture, NULL, &dstrect);
-			SDL_DestroyTexture(texture);
-			SDL_FreeSurface(surface);
-		}
+			}
 
 		}
 	}
