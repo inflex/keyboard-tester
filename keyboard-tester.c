@@ -606,6 +606,7 @@ int init_font( struct globals *g ) {
 int init_layout( struct globals *g ) {
 
 	if (g->compact == 1) {
+		g->key_count = 0;
 		for (int i = 0; i < KEYMAP_SIZE; i++) {
 			if (g->keys[i].name != NULL && *g->keys[i].name != '\0' && g->keys[i].group == 0) {
 				g->key_count++;
