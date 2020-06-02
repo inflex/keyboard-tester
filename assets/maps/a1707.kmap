@@ -56,7 +56,6 @@ scancode:81 group:0 name:DOWN
 scancode:82 group:0 name:UP
 scancode:224 group:0 name:LCTRL
 scancode:225 group:0 name:LSHIFT
-scancode:226 group:0 name:LALT
 scancode:227 group:0 name:LGUI
 scancode:229 group:0 name:RSHIFT
 scancode:230 group:0 name:RALT
