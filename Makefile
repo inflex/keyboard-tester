@@ -1,7 +1,7 @@
 default: keyboard-tester
 
 CC=gcc
-LIBS=-lm $(shell sdl2-config --static-libs) -lSDL2_ttf
+LIBS=-lm $(shell sdl2-config --static-libs) -lSDL2 -lSDL2_ttf
 CFLAGS=-Wall -O2 $(shell sdl2-config --cflags)
 
 .c.o:
